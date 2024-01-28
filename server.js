@@ -81,99 +81,41 @@ app.get("/lessons", async (_req, res) => {
   }
 });
 
-// POST REQUEST - SUBMIT ORDER
-app.post("/orders", async (req, res) => {
+// POST
+app.post('/orders', async (req, res, next) => {
+  const body = req.body;
   try {
-    // Ensure the database connection is established
-    if (!db) {
-      await connectToDatabase();
-    }
-
-    // Access the "orders" collection in your MongoDB
-    const ordersCollection = db.collection("orders");
-
-    // Extract order data from the request body
-    const { name, phoneNumber, lessons } = req.body;
-
-    // Calculate numberOfSpaces by summing up the numberOfLessons for all lessons
-    const numberOfSpaces = lessons.reduce((total, lesson) => total + lesson.numberOfLessons, 0);
-
-    // Create a new order document
-    const newOrder = {
-      name,
-      phoneNumber,
-      lessons, // Store lessons array directly
-      numberOfSpaces, // Store the total number of spaces
-    };
-
-    // Insert the new order into the "orders" collection
-    const result = await ordersCollection.insertOne(newOrder);
-
-    if (result && result.ops && result.ops.length > 0) {
-      const savedOrder = result.ops[0];
-
-      // Iterate through lessons in the order and update availableInventory
-      for (const lesson of lessons) {
-        await updateLessonInventory(lesson.lessonID, lesson.numberOfLessons);
-      }
-
-      res.status(201).json(savedOrder);
-    } else {
-      res.status(500).json({ error: "Failed to save the order" });
-    }
+      await db.collection("orders").insertOne(body);
+      res.send({message: "Order successful"})
   } catch (error) {
-    console.error("Error saving order:", error);
-    res.status(500).json({ error: "An error occurred while saving the order" });
+      next(error)
+  }
+})
+
+// Update lesson quantities
+app.put('/updateLessons', async (req, res) => {
+  const lessonsToUpdate = req.body.lessonsToUpdate;
+
+  try {
+    // Loop through the lessons to update quantities
+    for (const lesson of lessonsToUpdate) {
+      const lessonId = lesson.id;
+      const numberOfLessonsToUpdate = lesson.numberOfLessons;
+
+      // Update the lesson quantity in the 'lessons' collection
+      await db.collection('lessons').updateOne(
+        { _id: new ObjectId(lessonId) },
+        { $inc: { availableInventory: -numberOfLessonsToUpdate } }
+      );
+    }
+
+    // Send a response indicating success
+    res.json({ message: 'Lesson quantities updated successfully' });
+  } catch (error) {
+    console.error('Error updating lesson quantities:', error);
+    res.status(500).json({ error: 'An error occurred while updating lesson quantities' });
   }
 });
-
-// PUT REQUEST - UPDATE INVENTORY
-app.put("/updateInventory/:lessonId", async (req, res) => {
-  try {
-    // Ensure the database connection is established
-    if (!db) {
-      await connectToDatabase();
-    }
-
-    // Access the "lessons" collection in your MongoDB
-    const lessonsCollection = db.collection("lessons");
-
-    // Extract lesson ID from the request parameters
-    const lessonId = req.params.lessonId;
-
-    // Find the lesson by its id
-    const lesson = await lessonsCollection.findOne({ _id: new ObjectId(lessonId) });
-
-    if (!lesson) {
-      res.status(404).json({ message: "Lesson not found" });
-      return;
-    }
-
-    // Extract the number of lessons to update from the request body
-    const { numberOfLessonsToUpdate } = req.body;
-
-    // Update the available spaces for the lesson
-    const updatedInventory = lesson.availableInventory - numberOfLessonsToUpdate;
-
-    // Update the lesson document with the new availableInventory value
-    const updateResult = await lessonsCollection.updateOne(
-      { _id: new ObjectId(lessonId) }, // Use "ObjectId" to match the lesson
-      { $set: { availableInventory: updatedInventory } } // Update the availableInventory field
-    );
-
-    if (updateResult.modifiedCount === 0) {
-      res.status(400).json({ message: "No changes made to available spaces" });
-    } else {
-      // Log the success message to the console
-      console.log(`Spaces updated successfully for lesson with ID ${lessonId}`);
-      res.status(200).json({ message: "Spaces updated successfully" });
-    }
-  } catch (error) {
-    console.error(`Error updating spaces for lesson with ID ${lessonId}:`, error);
-    res.status(500).json({ error: "An error occurred while updating spaces" });
-  }
-});
-
 
 // SEARCH 
 app.get('/search', async (req, res, next) => {
