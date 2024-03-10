@@ -93,8 +93,8 @@ app.post('/orders', async (req, res, next) => {
 })
 
 // Update lesson quantities
-app.put('/updateLessons', async (req, res, next) => {
-    const lessonsToUpdate = req.body;
+app.put('/updateLessons', async (req, res) => {
+    const lessonsToUpdate = req.body.lessonsToUpdate;
 
     try {
         // Loop through the lessons to update quantities
@@ -105,7 +105,7 @@ app.put('/updateLessons', async (req, res, next) => {
             // Update the lesson quantity in the 'lessons' collection
             await db.collection('lessons').updateOne(
                 { _id: new ObjectId(lessonId) },
-                { $inc: { availableInventory: numberOfLessonsToUpdate } }
+                { $inc: { availableInventory: -numberOfLessonsToUpdate } }
             );
         }
 
@@ -113,7 +113,7 @@ app.put('/updateLessons', async (req, res, next) => {
         res.json({ message: 'Lesson quantities updated successfully' });
     } catch (error) {
         console.error('Error updating lesson quantities:', error);
-        next(error); // Pass the error to the error handler middleware
+        res.status(500).json({ error: 'An error occurred while updating lesson quantities' });
     }
 });
 
