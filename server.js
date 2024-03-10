@@ -93,29 +93,28 @@ app.post('/orders', async (req, res, next) => {
 })
 
 // Update lesson quantities
-// Update lesson quantities
-app.put('/updateLessons', async (req, res) => {
-  const lessonsToUpdate = req.body.lessonsToUpdate;
+app.put('/updateLessons', async (req, res, next) => {
+    const lessonsToUpdate = req.body;
 
-  try {
-    // Loop through the lessons to update quantities
-    for (const lesson of lessonsToUpdate) {
-      const lessonId = lesson.id;
-      const numberOfLessonsToUpdate = lesson.numberOfLessons;
+    try {
+        // Loop through the lessons to update quantities
+        for (const lesson of lessonsToUpdate) {
+            const lessonId = lesson.id;
+            const numberOfLessonsToUpdate = lesson.numberOfLessons;
 
-      // Update the lesson quantity in the 'lessons' collection
-      await db.collection('lessons').updateOne(
-        { _id: new ObjectId(lessonId) },
-        { $inc: { availableInventory: -numberOfLessonsToUpdate } }
-      );
+            // Update the lesson quantity in the 'lessons' collection
+            await db.collection('lessons').updateOne(
+                { _id: new ObjectId(lessonId) },
+                { $inc: { availableInventory: numberOfLessonsToUpdate } }
+            );
+        }
+
+        // Send a response indicating success
+        res.json({ message: 'Lesson quantities updated successfully' });
+    } catch (error) {
+        console.error('Error updating lesson quantities:', error);
+        next(error); // Pass the error to the error handler middleware
     }
-
-    // Send a response indicating success
-    res.json({ message: 'Lesson quantities updated successfully' });
-  } catch (error) {
-    console.error('Error updating lesson quantities:', error);
-    res.status(500).json({ error: 'An error occurred while updating lesson quantities' });
-  }
 });
 
 // SEARCH 
