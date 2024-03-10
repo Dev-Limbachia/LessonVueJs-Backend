@@ -92,29 +92,22 @@ app.post('/orders', async (req, res, next) => {
   }
 })
 
-// Update lesson quantities
-app.put('/updateLessons', async (req, res) => {
-    const lessonsToUpdate = req.body.lessonsToUpdate;
+// UPDATE ACTIVITIES SPACES
+app.put('/updateLessons', async (req, res, next) => {
+  const lessons = req.body;
 
-    try {
-        // Loop through the lessons to update quantities
-        for (const lesson of lessonsToUpdate) {
-            const lessonId = lesson.id;
-            const numberOfLessonsToUpdate = lesson.numberOfLessons;
+  try {
+    for (const lesson of lessons) {
+      const filter = { _id: new ObjectId(lesson._id) };
+      const update = { $inc: { availableInventory: -lesson.quantity } };
 
-            // Update the lesson quantity in the 'lessons' collection
-            await db.collection('lessons').updateOne(
-                { _id: new ObjectId(lessonId) },
-                { $inc: { availableInventory: -numberOfLessonsToUpdate } }
-            );
-        }
-
-        // Send a response indicating success
-        res.json({ message: 'Lesson quantities updated successfully' });
-    } catch (error) {
-        console.error('Error updating lesson quantities:', error);
-        res.status(500).json({ error: 'An error occurred while updating lesson quantities' });
+      await db.collection('lessons').updateOne(filter, update);
     }
+
+    res.send({ message: "Spaces updated" });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // SEARCH 
