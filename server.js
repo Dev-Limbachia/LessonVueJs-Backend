@@ -93,6 +93,7 @@ app.post('/orders', async (req, res, next) => {
 })
 
 // Update lesson quantities
+// Update lesson quantities
 app.put('/updateLessons', async (req, res) => {
   const lessonsToUpdate = req.body.lessonsToUpdate;
 
