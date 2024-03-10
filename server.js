@@ -104,7 +104,7 @@ app.put('/updateLessons', async (req, res) => {
 
             // Update the lesson quantity in the 'lessons' collection
             await db.collection('lessons').updateOne(
-                { _id: new ObjectId(lessonId) },
+                { id: new ObjectId(lessonId) },
                 { $inc: { availableInventory: -numberOfLessonsToUpdate } }
             );
         }
